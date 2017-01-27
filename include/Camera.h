@@ -9,6 +9,8 @@ public:
     Camera();
     ~Camera();
 
-private:
+    cv::Mat getFrame();
 
+private:
+    cv::VideoCapture cap;
 };
