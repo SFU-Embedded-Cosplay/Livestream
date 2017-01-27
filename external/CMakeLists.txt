@@ -1,2 +1,2 @@
-# add all external binaries / dependencies (.so and .dll files)
+# add all external binaries / dependencies (.a and .so files)
 # along with other peoples codebases here.
