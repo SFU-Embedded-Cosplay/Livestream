@@ -9,8 +9,6 @@
 int main(int argc, char** argv) {
     RTPPacket packet(0, 0, 256, "test data");
 
-    std::cout << "This RPT packet is using version #" << packet.getVersion() << std::endl;
-
     UDPServer server(8080);
     std::string message = server.receive();
 

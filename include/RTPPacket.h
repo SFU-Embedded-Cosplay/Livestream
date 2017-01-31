@@ -9,7 +9,6 @@ public:
     RTPPacket(uint16_t sequenceNumber, uint32_t timeStamp, uint32_t synchronizationSourceId, std::string data);
     ~RTPPacket();
 
-    int8_t getVersion();
     std::string getNetworkMessage();
 
     static const int HEADER_LENGTH = 16; // 16 bytes

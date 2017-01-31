@@ -43,10 +43,6 @@ std::string RTPPacket::getNetworkMessage() {
 
 }
 
-int8_t RTPPacket::getVersion() {
-    return header.version; //16
-}
-
 int RTPPacket::setBytes(char* destination, uint32_t source, int startIndex, int sourceBytes) {
     for (int i = startIndex; i < (startIndex + sourceBytes); i++) {
         destination[i] = (source >> ((i - startIndex) * 8)) & 0xff;
