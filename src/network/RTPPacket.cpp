@@ -43,6 +43,15 @@ std::string RTPPacket::getNetworkMessage() {
 
 }
 
+void RTPPacket::printBinaryInformation() {
+    std::string message = getNetworkMessage();
+
+    for (std::size_t i = 0; i < message.size(); ++i) {
+        char byte = message.c_str()[i];
+        std::cout << std::bitset<8>(byte) << "    " << byte << std::endl;
+    }
+}
+
 int RTPPacket::setBytes(char* destination, uint32_t source, int startIndex, int sourceBytes) {
     for (int i = startIndex; i < (startIndex + sourceBytes); i++) {
         destination[i] = (source >> ((i - startIndex) * 8)) & 0xff;

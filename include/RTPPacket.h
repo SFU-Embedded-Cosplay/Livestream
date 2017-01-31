@@ -3,6 +3,7 @@
 #include <stdint.h>
 #include <iostream>
 #include <string>
+#include <bitset>
 
 class RTPPacket {
 public:
@@ -10,6 +11,8 @@ public:
     ~RTPPacket();
 
     std::string getNetworkMessage();
+
+    void printBinaryInformation();
 
     static const int HEADER_LENGTH = 16; // 16 bytes
 private:
