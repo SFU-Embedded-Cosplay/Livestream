@@ -1,8 +1,7 @@
 #include "RTPPacket.h"
 
-RTPPacket::RTPPacket(uint16_t sequenceNumber, uint32_t timeStamp, uint32_t synchronizationSourceId) {
+RTPPacket::RTPPacket(uint16_t sequenceNumber, uint32_t timeStamp, uint32_t synchronizationSourceId, std::string data) : data(data) {
     initializeDefaultHeader();
-
 
     header.sequenceNumber = sequenceNumber;
     header.timeStamp = timeStamp;
@@ -13,8 +12,47 @@ RTPPacket::~RTPPacket() {
 
 }
 
+std::string RTPPacket::getNetworkMessage() {
+    // std's <bitset> class might be a more efficient alternative.
+    char response[HEADER_LENGTH];
+    int length = HEADER_LENGTH + data.length();
+
+    response[0] = 0;
+
+    response[0] |= header.version << 6;
+    response[0] |= header.hasPadding << 5;
+    response[0] |= header.hasExtension << 4;
+    response[0] |= header.NumberOfContributingSourceIds;
+
+
+    response[1] = 0;
+
+    response[1] |= header.hasSpecialData << 7;
+    response[1] |= header.payloadType;
+
+
+
+    int position = setBytes(response, header.sequenceNumber, 2, sizeof(header.sequenceNumber));
+    position = setBytes(response, header.timeStamp, position, sizeof(header.timeStamp));
+    position = setBytes(response, header.synchronizationSourceId, position, sizeof(header.synchronizationSourceId));
+    position = setBytes(response, header.contributingSourceId, position, sizeof(header.contributingSourceId));
+
+    std::string message = std::string(response);
+
+    return std::string(response, HEADER_LENGTH) + data;
+
+}
+
 int8_t RTPPacket::getVersion() {
     return header.version; //16
+}
+
+int RTPPacket::setBytes(char* destination, uint32_t source, int startIndex, int sourceBytes) {
+    for (int i = startIndex; i < (startIndex + sourceBytes); i++) {
+        destination[i] = (source >> ((i - startIndex) * 8)) & 0xff;
+    }
+
+    return startIndex + sourceBytes;
 }
 
 void RTPPacket::initializeDefaultHeader() {
