@@ -15,7 +15,7 @@ RTPPacket::~RTPPacket() {
 std::string RTPPacket::getNetworkMessage() {
     // std's <bitset> class might be a more efficient alternative.
     char response[HEADER_LENGTH];
-    int length = HEADER_LENGTH + data.length();
+    std::size_t length = HEADER_LENGTH + data.length();
 
     response[0] = 0;
 
@@ -52,8 +52,8 @@ void RTPPacket::printBinaryInformation() {
     }
 }
 
-int RTPPacket::setBytes(char* destination, uint32_t source, int startIndex, int sourceBytes) {
-    for (int i = startIndex; i < (startIndex + sourceBytes); i++) {
+std::size_t RTPPacket::setBytes(char* destination, uint32_t source, std::size_t startIndex, std::size_t sourceBytes) {
+    for (std::size_t i = startIndex; i < (startIndex + sourceBytes); ++i) {
         destination[i] = (source >> ((i - startIndex) * 8)) & 0xff;
     }
 

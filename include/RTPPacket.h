@@ -50,7 +50,7 @@ private:
     } header_t;
 
     void initializeDefaultHeader();
-    int setBytes(char* destination, uint32_t source, int startIndex, int sourceBytes);
+    std::size_t setBytes(char* destination, uint32_t source, std::size_t startIndex, std::size_t sourceBytes);
 
     header_t header;
     std::string data;
