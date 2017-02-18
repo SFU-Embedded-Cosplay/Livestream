@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 2.8)
 
 project(livestream)
 
-find_package(OpenCV REQUIRED )
-
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
 set(CMAKE_CXX_FLAG "-g -Wall -std=c++14")
