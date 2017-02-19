@@ -9,9 +9,9 @@
 #include <bitset>
 
 void writeFrame(std::string out_name, Frame_t frame) {
-    FILE* fout = fopen(out_name.c_str(), "w");
+    FILE* fout = fopen(out_name.c_str(), "a");
 
-    fwrite(frame.data, frame.length, 1, fout);
+    fwrite(frame.data, frame.dataLength, 1, fout);
     fclose(fout);
 }
 
@@ -19,7 +19,7 @@ int main() {
     std::cout << "starting\n";
 
     Camera cam(1);
-    int frameRate = 24;
+    int frameRate = 24 * 10;
 
     struct timeval t1, t2;
     double elapsedTime;
@@ -29,7 +29,7 @@ int main() {
 
     for(int i = 0; i < frameRate; i++) {
         Frame_t frame = cam.getFrame();
-        std::cout << frame.length << " done\n";
+        std::cout << "Frames " << i << " has length: " << frame.length << " done\n";
         writeFrame("1.raw", frame);
     }
 
