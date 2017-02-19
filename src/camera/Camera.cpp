@@ -5,7 +5,9 @@ const size_t Camera::FRAME_WIDTH = 1920;
 const size_t Camera::FRAME_HEIGHT = 1080;
 
 
-Camera::Camera() {
+Camera::Camera(size_t numberOfBuffers) :
+        numberOfBuffers(numberOfBuffers),
+        frames(NULL) {
     struct v4l2_format format;
 
     cameraFileDescriptor = v4l2_open(VIDEO_DEVICE_DRIVER_PATH.c_str(), O_RDWR | O_NONBLOCK, 0);
@@ -15,6 +17,17 @@ Camera::Camera() {
     }
 
     setFormat(format);
+    mapInMemoryBuffersToCameraBuffers(numberOfBuffers);
+    enqueuBuffers(numberOfBuffers);
+    startStreaming();
+}
+
+Camera::~Camera() {
+    for (int i = 0; i < numberOfBuffers; ++i) {
+        v4l2_munmap(frames[i].data, frames[i].length);
+    }
+    delete[] frames;
+    v4l2_close(cameraFileDescriptor);
 }
 
 void Camera::setFormat(struct v4l2_format &format) {
@@ -44,96 +57,124 @@ int Camera::xioctl(int fileDescriptor, int request, void *arguments)
         return response;
 }
 
-Frame_t Camera::getFrame() {
+void Camera::mapInMemoryBuffersToCameraBuffers(size_t numberOfBuffers) {
     struct v4l2_requestbuffers requestBuffer;
     struct v4l2_buffer buffer;
-    enum v4l2_buf_type bufferType;
-    Frame_t frame;
-
 
     // request that a buffer be queued
-    requestBuffer.count = 1;
+    requestBuffer.count = numberOfBuffers;
     requestBuffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     requestBuffer.memory = V4L2_MEMORY_MMAP;
 
-    xioctl(cameraFileDescriptor, VIDIOC_REQBUFS, &requestBuffer);
-
-    // get a pointer to the video data buffer on the camera
-    memset(&buffer, 0, sizeof(buffer));
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buffer.memory = V4L2_MEMORY_MMAP;
-    buffer.index = 0;
-
-    xioctl(cameraFileDescriptor, VIDIOC_QUERYBUF, &buffer);
-
-    // memory map buffer to frame
-    frame.length = buffer.length;
-    frame.data = v4l2_mmap(
-        NULL,
-        buffer.length,
-        PROT_READ | PROT_WRITE,
-        MAP_SHARED,
-        cameraFileDescriptor,
-        buffer.m.offset
-    );
-
-    if (MAP_FAILED == frame.data) {
-        std::cerr << "FATAL ERROR: mmap() failure occured when trying to load a frame from the webcamera.\n";
-        exit(EXIT_FAILURE);
+    if (xioctl(cameraFileDescriptor, VIDIOC_REQBUFS, &requestBuffer) == -1) {
+        std::cout << "ERROR: could not query camera buffer with size: " << numberOfBuffers << " because: " << strerror(errno) << "\n";
     }
 
 
-    // enque a buffer
-    memset(&buffer, 0, sizeof(buffer));
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buffer.memory = V4L2_MEMORY_MMAP;
-    buffer.index = 0;
-    xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
+    assert(frames == NULL);
+    frames = new Frame_t[numberOfBuffers];
 
+    for(int i = 0; i < requestBuffer.count; ++i) {
+        // get a pointer to the video data buffer on the camera
+        memset(&buffer, 0, sizeof(buffer));
+        buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buffer.memory = V4L2_MEMORY_MMAP;
+        buffer.index = i;
 
+        if (xioctl(cameraFileDescriptor, VIDIOC_QUERYBUF, &buffer) == -1) {
+            std::cout << "ERROR: could not map buffer to memory because: " << strerror(errno) << "\n";
+        }
 
+        // memory map buffer to frame
+        frames[i].length = buffer.length;
+        frames[i].data = v4l2_mmap(
+            NULL,
+            buffer.length,
+            PROT_READ | PROT_WRITE,
+            MAP_SHARED,
+            cameraFileDescriptor,
+            buffer.m.offset
+        );
+
+        if (MAP_FAILED == frames[i].data) {
+            std::cerr << "FATAL ERROR: mmap() failure occured when trying to map a buffer to the webcameras memory.\n";
+            exit(EXIT_FAILURE);
+        }
+    }
+}
+
+void Camera::enqueuBuffers(size_t numberOfBuffers) {
+    struct v4l2_buffer buffer;
+
+    // enque all buffer
+    for (int i = 0; i < numberOfBuffers; ++i) {
+        memset(&buffer, 0, sizeof(buffer));
+
+        buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buffer.memory = V4L2_MEMORY_MMAP;
+        buffer.index = i;
+
+        xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
+    }
+}
+
+void Camera::startStreaming() {
     // start capturing image data
-    bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    enum v4l2_buf_type bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     xioctl(cameraFileDescriptor, VIDIOC_STREAMON, &bufferType);
+}
+
+void Camera::stopStreaming() {
+    enum v4l2_buf_type bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    xioctl(cameraFileDescriptor, VIDIOC_STREAMOFF, &bufferType);
+}
+
+Frame_t Camera::getFrame() {
+    struct v4l2_buffer buffer;
+    Frame_t frame;
 
     fd_set fileDescriptors;
     struct timeval timeout;
 
-    int response = 0;
-    do {
-        FD_ZERO(&fileDescriptors);
-        FD_SET(cameraFileDescriptor, &fileDescriptors);
+    for (int i = 0; i < numberOfBuffers; i++) {
+        int response = 0;
+        do {
+            FD_ZERO(&fileDescriptors);
+            FD_SET(cameraFileDescriptor, &fileDescriptors);
 
-        /* Timeout. */
-        timeout.tv_sec = 10;
-        timeout.tv_usec = 10;
+            /* Timeout. */
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 41;
 
-        response = select(cameraFileDescriptor + 1, &fileDescriptors, NULL, NULL, &timeout);
-    } while ((response == -1 && (errno = EINTR)));
+            response = select(cameraFileDescriptor + 1, &fileDescriptors, NULL, NULL, &timeout);
+        } while ((response == -1 && (errno = EINTR)));
 
-    if (response == -1) {
-        std::cerr << "select\n";
-        //return nullptr;
+        if (response == -1) {
+            std::cerr << "select\n";
+            continue;
+            // return NULL;
+        }
+
+        if (response == 0) {
+            // select timed out
+        }
+
+        // deque the buffer
+        memset(&buffer, 0, sizeof(buffer));
+        buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        buffer.memory = V4L2_MEMORY_MMAP;
+        xioctl(cameraFileDescriptor, VIDIOC_DQBUF, &buffer);
+
+        // could process the buffer at this point with a callback in the future.
+        std::cout << "used 1: " << buffer.bytesused << "\n";
+        // frames[buffer.index].length = buffer.bytesused;
+        // re queue the buffer again
+        xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
+
+        std::cout << "used 2: " << buffer.bytesused << "\n";
+
+        return frames[buffer.index];
     }
 
-    // deque the buffer
-    // memset(&buffer, 0, sizeof(buffer));
-    buffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    buffer.memory = V4L2_MEMORY_MMAP;
-    xioctl(cameraFileDescriptor, VIDIOC_DQBUF, &buffer);
-
-    // could process the buffer at this point with a callback in the future.
-
-    // enque the buffer again
-    xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
-
-    // stop streaming
-    bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    xioctl(cameraFileDescriptor, VIDIOC_STREAMOFF, &bufferType);
-
-    return frame;
-}
-
-Camera::~Camera() {
-    close(cameraFileDescriptor);
+    return frames[0];
 }

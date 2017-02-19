@@ -25,8 +25,11 @@ typedef struct {
 
 class Camera {
 public:
-    Camera();
+    Camera(size_t numberOfBuffers);
     ~Camera();
+
+    void startStreaming();
+    void stopStreaming();
 
     Frame_t getFrame();
 
@@ -36,9 +39,15 @@ public:
 private:
 
     void setFormat(struct v4l2_format &format);
+    void mapInMemoryBuffersToCameraBuffers(size_t numberOfBuffers);
+    void enqueuBuffers(size_t numberOfBuffers);
+
     static int xioctl(int fileDescriptor, int request, void *arguments);
 
     int cameraFileDescriptor;
+    size_t numberOfBuffers;
+
+    Frame_t* frames;
 
     //cv::VideoCapture cap;
 };
