@@ -20,6 +20,7 @@
 
 typedef struct {
     size_t length;
+    size_t dataLength;
     void* data; // you must manually free the allocated data array
 } Frame_t;
 

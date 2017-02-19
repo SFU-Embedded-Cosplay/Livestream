@@ -82,7 +82,7 @@ void Camera::mapInMemoryBuffersToCameraBuffers(size_t numberOfBuffers) {
         buffer.index = i;
 
         if (xioctl(cameraFileDescriptor, VIDIOC_QUERYBUF, &buffer) == -1) {
-            std::cout << "ERROR: could not map buffer to memory because: " << strerror(errno) << "\n";
+            std::cerr << "ERROR: could not map buffer to memory because: " << strerror(errno) << "\n";
         }
 
         // memory map buffer to frame
@@ -114,24 +114,32 @@ void Camera::enqueuBuffers(size_t numberOfBuffers) {
         buffer.memory = V4L2_MEMORY_MMAP;
         buffer.index = i;
 
-        xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
+        if (xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer) == -1) {
+            std::cerr << "FATAL ERROR: Could not enqueu a buffer because: " << strerror(errno) << "\n";
+            exit(EXIT_FAILURE);
+        }
     }
 }
 
 void Camera::startStreaming() {
     // start capturing image data
     enum v4l2_buf_type bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    xioctl(cameraFileDescriptor, VIDIOC_STREAMON, &bufferType);
+    if (xioctl(cameraFileDescriptor, VIDIOC_STREAMON, &bufferType) == -1) {
+        std::cerr << "FATAL ERROR: Could not start streaming because: " << strerror(errno) << "\n";
+        exit(EXIT_FAILURE);
+    }
 }
 
 void Camera::stopStreaming() {
     enum v4l2_buf_type bufferType = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    xioctl(cameraFileDescriptor, VIDIOC_STREAMOFF, &bufferType);
+    if (xioctl(cameraFileDescriptor, VIDIOC_STREAMOFF, &bufferType) == -1) {
+        std::cerr << "FATAL ERROR: Could not start streaming because: " << strerror(errno) << "\n";
+        exit(EXIT_FAILURE);
+    }
 }
 
 Frame_t Camera::getFrame() {
     struct v4l2_buffer buffer;
-    Frame_t frame;
 
     fd_set fileDescriptors;
     struct timeval timeout;
@@ -144,7 +152,7 @@ Frame_t Camera::getFrame() {
 
             /* Timeout. */
             timeout.tv_sec = 0;
-            timeout.tv_usec = 41;
+            timeout.tv_usec = 41667; //1,000,000 / 24 = 41666.6666...;
 
             response = select(cameraFileDescriptor + 1, &fileDescriptors, NULL, NULL, &timeout);
         } while ((response == -1 && (errno = EINTR)));
@@ -157,6 +165,8 @@ Frame_t Camera::getFrame() {
 
         if (response == 0) {
             // select timed out
+            std::cout << "could not get frame\n";
+            continue;
         }
 
         // deque the buffer
@@ -167,7 +177,8 @@ Frame_t Camera::getFrame() {
 
         // could process the buffer at this point with a callback in the future.
         std::cout << "used 1: " << buffer.bytesused << "\n";
-        // frames[buffer.index].length = buffer.bytesused;
+        frames[buffer.index].dataLength = buffer.bytesused;
+
         // re queue the buffer again
         xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
 
@@ -176,5 +187,11 @@ Frame_t Camera::getFrame() {
         return frames[buffer.index];
     }
 
-    return frames[0];
+    Frame_t frame = {
+        .length = 0,
+        .dataLength = 0,
+        .data = NULL
+    };
+
+    return frame;
 }
