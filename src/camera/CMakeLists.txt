@@ -1,3 +1,3 @@
 add_library(camera Camera.cpp)
 
-target_link_libraries(camera ${OpenCV_LIBS})
+target_link_libraries(camera v4l2)
