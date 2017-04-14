@@ -5,6 +5,8 @@
 #include <string>
 #include "assert.h"
 
+#include "FLVPacket.h"
+
 class RTMPStream {
 public:
 
