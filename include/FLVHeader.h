@@ -20,7 +20,7 @@ typedef struct FLVHeader {
     FLVHeader() :
             signature("FLV"),
             version(1),
-            mediaTypeFlags(AUDIO_AND_VIDEO),
+            mediaTypeFlags(VIDEO),
             headerSize(9)
     {
     }
