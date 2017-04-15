@@ -1,6 +1,8 @@
 #pragma once
 
 #include <string>
+#include <bitset>
+
 #include <stdint.h>
 
 #include "FLVHeader.h"
@@ -14,8 +16,8 @@ public:
 
     uint32_t previousPacketSize; // first packet of the stream should have a previous packet size of 0.
     uint8_t packetType;
-    uint24_t packetDataSize;
-    uint24_t timestampLower;
+    std::bitset<24> packetDataSize;
+    std::bitset<24> timestampLower;
     uint8_t timestampUpper;
     uint8_t streamID;
 
