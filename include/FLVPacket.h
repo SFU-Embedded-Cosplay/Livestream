@@ -11,6 +11,15 @@ class FLVPacket {
 public:
     FLVPacket();
     ~FLVPacket();
+
+    uint32_t previousPacketSize; // first packet of the stream should have a previous packet size of 0.
+    uint8_t packetType;
+    uint24_t packetDataSize;
+    uint24_t timestampLower;
+    uint8_t timestampUpper;
+    uint8_t streamID;
+
+    void *data;
 private:
 
 };
