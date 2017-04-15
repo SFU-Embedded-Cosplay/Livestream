@@ -44,6 +44,6 @@ void RTMPStream::startStream() {
 void sendFrame(FLVPacket packet) {
     uint32_t currentTime = RTMP_GetTime();
 
-    uint32_t dataLength = packet.dataLength;
+    uint32_t dataLength = 0;
 
 }
