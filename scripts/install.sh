@@ -4,3 +4,8 @@ sudo apt-get install libv4l-dev
 
 # install librtmp library
 sudo apt-get install librtmp-dev 
+
+# might need these 
+sudo apt-get install libgnutls-dev
+sudo apt-get install libssl-dev
+
