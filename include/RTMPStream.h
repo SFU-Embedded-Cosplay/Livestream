@@ -2,7 +2,10 @@
 
 #include <librtmp/rtmp.h>
 
+#include "FLVPacket.h"
+
 #include <string>
+#include <iostream>
 #include "assert.h"
 
 #include "FLVPacket.h"
@@ -17,6 +20,7 @@ public:
 
 private:
     RTMP *rtmp = NULL;
+    std::string url;
 
     static const uint32_t DEFAULT_TIMEOUT = 5;
 };

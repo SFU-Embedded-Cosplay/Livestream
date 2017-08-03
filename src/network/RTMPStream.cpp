@@ -1,16 +1,14 @@
 #include "RTMPStream.h"
 
-RTMPStream::RTMPStream(std::string url, uint32_t streamDurationInMilliseconds) {
+RTMPStream::RTMPStream(std::string url, uint32_t streamDurationInMilliseconds) : url(url) {
     rtmp = RTMP_Alloc();
     RTMP_Init(rtmp);
 
     rtmp->Link.timeout = DEFAULT_TIMEOUT;
 
-    char buffer[url.length() + 1];
-    url.copy(buffer, url.length());
-
-    if (!RTMP_SetupURL(rtmp, buffer)) {
+    if (!RTMP_SetupURL(rtmp, (char*) this->url.c_str())) {
         RTMP_Free(rtmp);
+        std::cout << "failed to set up RTMP url\n";
         assert(false);
     }
 
@@ -30,11 +28,13 @@ RTMPStream::~RTMPStream() {
 
 void RTMPStream::startStream() {
     if (!RTMP_Connect(rtmp, NULL)) {
+        std::cout << "failed to connect to the RTMP server\n";
         RTMP_Free(rtmp);
         assert(false);
     }
 
     if (!RTMP_ConnectStream(rtmp, 0)) {
+        std::cout << "failed to connect RTMP stream to the server\n";
         RTMP_Close(rtmp);
         RTMP_Free(rtmp);
         assert(false);
