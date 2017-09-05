@@ -1,6 +1,6 @@
 #include "RTMPStream.h"
 
-RTMPStream::RTMPStream(std::string url, uint32_t streamDurationInMilliseconds) : url(url) {
+RTMPStream::RTMPStream(std::string url, uint32_t streamDurationInMilliseconds) : url(url), header() {
     rtmp = RTMP_Alloc();
     RTMP_Init(rtmp);
 
@@ -39,11 +39,39 @@ void RTMPStream::startStream() {
         RTMP_Free(rtmp);
         assert(false);
     }
+
+    startTime = RTMP_GetTime();
+
+    // int ret = RTMP_Write(rtmp, (char *) header.getHeader().c_str(), 9);
+    // std::cout << ret << std::endl;
 }
 
-void sendFrame(FLVPacket packet) {
-    uint32_t currentTime = RTMP_GetTime();
+void RTMPStream::sendFrame(FLVPacket packet) {
+    uint32_t currentTime = RTMP_GetTime() - startTime;
 
     uint32_t dataLength = 0;
 
+}
+
+void RTMPStream::sendData(char *data, uint32_t length) {
+    RTMPPacket packet;
+    packet.m_nChannel = 0x4; // video type
+    packet.m_headerType = RTMP_PACKET_SIZE_LARGE;
+    packet.m_packetType = RTMP_PACKET_TYPE_VIDEO;
+    packet.m_nTimeStamp = RTMP_GetTime() - startTime;
+    packet.m_nInfoField2 = rtmp->m_stream_id;
+    packet.m_hasAbsTimestamp = TRUE;
+
+    packet.m_nBodySize = length;
+    packet.m_body = data;
+
+    std::cout << "sending\n" << length << "   ->   "  << packet.m_nBodySize << "\n";
+
+    if(!RTMP_SendPacket(rtmp, &packet, FALSE))
+    {
+        std::cout << "could not send packet\n";
+    }
+    // if(!RTMP_Write(rtmp, data, length)) {
+    //     std::cout << "write failed\n";
+    // }
 }
