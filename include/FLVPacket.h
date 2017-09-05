@@ -17,17 +17,19 @@ enum FLVPacketType {
 
 class FLVPacket {
 public:
-    FLVPacket();
+    FLVPacket(void *data, std::bitset<24> dataSize, uint32_t previousPacketSize, uint32_t timestamp, uint8_t streamID, FLVPacketType packetType);
     ~FLVPacket();
 
+    std::string getPacketContent();
+private:
     uint32_t previousPacketSize; // first packet of the stream should have a previous packet size of 0.
     FLVPacketType packetType;
     std::bitset<24> packetDataSize;
     std::bitset<24> timestampLower;
     uint8_t timestampUpper;
     uint8_t streamID;
+    std::bitset<24> dataSize;
 
     void *data;
-private:
 
 };
