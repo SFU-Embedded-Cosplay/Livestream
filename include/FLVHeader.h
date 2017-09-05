@@ -5,7 +5,7 @@
 
 // note that all 2 byte or more numbers, in an flv packet / header, are stored using Big Endian.
 
-enum FLVHeaderMode {
+enum FLVMediaType {
     AUDIO = 4,
     VIDEO = 1,
     AUDIO_AND_VIDEO = 5,
@@ -14,7 +14,7 @@ enum FLVHeaderMode {
 typedef struct FLVHeader {
     std::string signature;
     uint8_t version;
-    FLVHeaderMode mediaTypeFlags;
+    FLVMediaType mediaTypeFlags;
     uint32_t headerSize;
 
     FLVHeader() :
@@ -22,8 +22,7 @@ typedef struct FLVHeader {
             version(1),
             mediaTypeFlags(VIDEO),
             headerSize(9)
-    {
-    }
+    {}
 
     std::string getHeader() {
         char header[headerSize];
