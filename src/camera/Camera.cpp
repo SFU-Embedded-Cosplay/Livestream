@@ -184,11 +184,10 @@ Frame_t Camera::getFrame() {
         return frames[buffer.index];
     }
 
-    Frame_t frame = {
-        .length = 0,
-        .dataLength = 0,
-        .data = NULL
-    };
+    Frame_t frame;
+    frame.length = 0;
+    frame.dataLength = 0;
+    frame.data = NULL;
 
     return frame;
 }
