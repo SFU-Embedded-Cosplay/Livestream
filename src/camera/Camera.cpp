@@ -176,13 +176,10 @@ Frame_t Camera::getFrame() {
         xioctl(cameraFileDescriptor, VIDIOC_DQBUF, &buffer);
 
         // could process the buffer at this point with a callback in the future.
-        std::cout << "used 1: " << buffer.bytesused << "\n";
         frames[buffer.index].dataLength = buffer.bytesused;
 
         // re queue the buffer again
         xioctl(cameraFileDescriptor, VIDIOC_QBUF, &buffer);
-
-        std::cout << "used 2: " << buffer.bytesused << "\n";
 
         return frames[buffer.index];
     }
