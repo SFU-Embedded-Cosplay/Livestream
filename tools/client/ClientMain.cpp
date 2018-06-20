@@ -15,6 +15,8 @@ void writeFrame(std::string out_name, Frame_t frame) {
 
 int main() {
     // rtmp://live-ord.twitch.tv/app/live_<values>_<values>
+    // replace 'live_<values>_<values>' with your twitch stream key.
+    // Your stream key can be found at https://www.twitch.tv/<your username>/dashboard/settings
     RTMPStream stream("rtmp://live-sea.twitch.tv/app/live_<values>_<values>", 30 * 1000);
     stream.startStream();
 
