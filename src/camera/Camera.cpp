@@ -151,7 +151,7 @@ Frame_t Camera::getFrame() {
             FD_SET(cameraFileDescriptor, &fileDescriptors);
 
             /* Timeout. */
-            timeout.tv_sec = 0;
+            timeout.tv_sec = 1;
             timeout.tv_usec = 41667; //1,000,000 / 24 = 41666.6666...;
 
             response = select(cameraFileDescriptor + 1, &fileDescriptors, NULL, NULL, &timeout);
