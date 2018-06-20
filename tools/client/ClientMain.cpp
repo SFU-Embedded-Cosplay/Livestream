@@ -1,9 +1,7 @@
 #include <iostream>
 #include <string>
 
-#include "RTPPacket.h"
-#include "UDPClient.h"
-#include "UDPServer.h"
+#include "RTMPStream.h"
 #include "Camera.h"
 
 #include <bitset>
@@ -16,67 +14,34 @@ void writeFrame(std::string out_name, Frame_t frame) {
 }
 
 int main() {
-    std::cout << "starting\n";
+    // rtmp://live-ord.twitch.tv/app/live_<values>_<values>
+    RTMPStream stream("rtmp://live-sea.twitch.tv/app/live_<values>_<values>", 30 * 1000);
+    stream.startStream();
 
     Camera cam(1);
-    int frameRate = 24 * 10;
 
-    struct timeval t1, t2;
-    double elapsedTime;
+    int framesPerSecond = 30;
+    int durationInSeconds = 10 * 1;
+    int frameRate = framesPerSecond * durationInSeconds;
 
-    // start timer
-    gettimeofday(&t1, NULL);
+    std::string rawFileName = "recording.raw";
+    std::string mp4FileName = "recording.mp4";
+
+    // If you don't remove the old raw video this then the new video will be appended to the old video.
+    remove(rawFileName.c_str());
 
     for(int i = 0; i < frameRate; i++) {
         Frame_t frame = cam.getFrame();
-        std::cout << "Frames " << i << " has length: " << frame.length << " done\n";
-        writeFrame("1.raw", frame);
+
+        stream.sendData((char*) frame.data, frame.dataLength);
+        writeFrame(rawFileName, frame);
     }
 
     cam.stopStreaming();
 
-    // stop timer
-    gettimeofday(&t2, NULL);
+    // add the header onto the raw mp4 data.
+    std::string mp4HeaderCommand = "ffmpeg -f h264 -i " + rawFileName + " -vcodec copy " + mp4FileName;
+    system(mp4HeaderCommand.c_str());
 
-    elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
-    elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;   // us to ms
-    std::cout << elapsedTime << " ms.\n";
-
-    /*
-    Frame_t frame = cam.getFrame(); writeFrame("0.ppm", frame);
-    std::cout << frame.length << "\n";
-    frame = cam.getFrame(); writeFrame("1.ppm", frame);
-    frame = cam.getFrame(); writeFrame("2.ppm", frame);
-    frame = cam.getFrame(); writeFrame("3.ppm", frame);
-    frame = cam.getFrame(); writeFrame("4.ppm", frame);
-    frame = cam.getFrame(); writeFrame("5.ppm", frame);
-    frame = cam.getFrame(); writeFrame("6.ppm", frame);
-    frame = cam.getFrame(); writeFrame("7.ppm", frame);
-    frame = cam.getFrame(); writeFrame("8.ppm", frame);
-    frame = cam.getFrame(); writeFrame("9.ppm", frame);
-    frame = cam.getFrame(); writeFrame("10.ppm", frame);
-    /*
-
-
-
-
-
-    std::cout << frame.length << std::endl;
-    /*
-    RTPPacket packet(260, 0, 1024, "hello world");
-    std::string msg = packet.getNetworkMessage();
-
-    std::cout << msg << ": "<< msg.size() << std::endl;
-
-    packet.printBinaryInformation();
-
-    // std::cout << cam.getFrame().size() << std::endl;
-
-    UDPClient udp("127.0.0.1", 8080);
-    UDPServer server(8081);
-
-    udp.send("hello world");
-    std::cout << "client received: '" + server.receive() + "'" << std::endl;
-*/
     return 0;
 }
