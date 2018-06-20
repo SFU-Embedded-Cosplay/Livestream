@@ -70,7 +70,7 @@ void RTMPStream::sendData(char *data, uint32_t length) {
 
     packet->m_nBodySize = length;
     packet->m_nBytesRead = length;
-    // packet->m_body = data;s
+    // packet->m_body = data;
 
     memcpy(packet->m_body , data, length);
     packet->m_body[0] = 0x17; // 0x17 = H.264 keyframe. 0x27 = H.264 inter-frame video.
