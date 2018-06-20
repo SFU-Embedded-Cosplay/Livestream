@@ -8,6 +8,8 @@
 
 #include <string>
 #include <iostream>
+#include <cstdlib>
+#include <cstring>
 #include "assert.h"
 
 #include "FLVPacket.h"
@@ -23,7 +25,7 @@ public:
     void sendData(char *data, uint32_t length);
 
 private:
-    RTMP *rtmp = NULL;
+    RTMP *rtmp;
     std::string url;
     FLVHeader_t header;
 
